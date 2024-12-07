@@ -16,7 +16,12 @@ const CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING || "mongodb://127.
 mongoose.connect(CONNECTION_STRING);
 
 const app = express();
-app.use(cors());
+app.use(
+    cors({
+        credentials: true,
+        origin: true,
+    })
+);
 const sessionOptions = {
     secret: process.env.SESSION_SECRET || "kanbas",
     resave: false,
