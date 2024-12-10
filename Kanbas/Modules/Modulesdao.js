@@ -1,24 +1,36 @@
-import Database from "../Database/index.js";
-
-export function updateModule(moduleId, moduleUpdates) {
-    const { modules } = Database;
-    const module = modules.find((module) => module._id === moduleId);
-    Object.assign(module, moduleUpdates);
+import model from "./model.js";
+export const updateModule = async (moduleId, moduleUpdates) => {
+  try {
+    // Find the existing module first
+    const module = await model.findById(moduleId);
+    if (!module) {
+      throw new Error("Module not found");
+    }
+    
+    // Update module fields
+    if (moduleUpdates.name) module.name = moduleUpdates.name;
+    if (moduleUpdates.description) module.description = moduleUpdates.description;
+    
+    // Save the updated module
+    await module.save();
     return module;
+  } catch (error) {
+    console.error("Error updating module:", error);
+    throw error;
   }
+};
   
-export function deleteModule(moduleId) {
-    const { modules } = Database;
-    Database.modules = modules.filter((module) => module._id !== moduleId);
-   }
-   
-export function createModule(module) {
-    const newModule = { ...module, _id: Date.now().toString() };
-    Database.modules = [...Database.modules, newModule];
-    return newModule;
-  }
-  
-export function findModulesForCourse(courseId) {
-  const { modules } = Database;
-  return modules.filter((module) => module.course === courseId);
-}
+export const deleteModule = async (moduleId) => {
+  const status = await model.deleteOne({ _id: moduleId });
+  return status;
+};
+
+export const findModulesForCourse = async (courseId) => {
+  const modules = await model.find({ course: courseId });
+  return modules;
+};
+
+export const createModule = async (module) => {
+  const newModule = await model.create(module);
+  return newModule;
+};

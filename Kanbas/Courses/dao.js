@@ -32,31 +32,57 @@ export async function createCourse(course) {
 }
 
 export async function deleteCourse(courseId) {
- try {
-   // Delete the course document
-   const result = await model.deleteOne({ _id: courseId });
-   
-   if (result.deletedCount > 0) {
-     await enrollmentModel.deleteMany({ course: courseId });
-   }
-   
-   return result;
- } catch (error) {
-   console.error("Error deleting course:", error);
-   throw new Error(`Failed to delete course: ${error.message}`);
- }
+  try {
+    // Validate courseId
+    if (!courseId) {
+      throw new Error("Course ID is required");
+    }
+
+    // First check if course exists
+    const course = await model.findById(courseId);
+    if (!course) {
+      throw new Error(`Course with ID ${courseId} not found`);
+    }
+
+    // Delete the course document
+    const result = await model.findByIdAndDelete(courseId);
+    
+    if (result) {
+      // Delete related enrollments
+      await enrollmentModel.deleteMany({ course: courseId });
+      return { success: true, message: 'Course and related enrollments deleted' };
+    } else {
+      throw new Error('Course deletion failed');
+    }
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    throw error;
+  }
 }
 
 export async function updateCourse(courseId, courseUpdates) {
- try {
-   return await model.updateOne(
-     { _id: courseId }, 
-     { $set: courseUpdates }
-   );
- } catch (error) {
-   console.error("Error updating course:", error);
-   throw error;
- }
+  try {
+    // If courseUpdates contains _id, it means we're receiving the full course object
+    // from the frontend updateCourse(course) call
+    if (courseUpdates._id) {
+      const { _id, ...updates } = courseUpdates;
+      return await model.findByIdAndUpdate(
+        courseId,
+        { $set: updates },
+        { new: true }
+      );
+    }
+    
+    // Original behavior if receiving separate updates
+    return await model.findByIdAndUpdate(
+      courseId,
+      { $set: courseUpdates },
+      { new: true }
+    );
+  } catch (error) {
+    console.error("Error updating course:", error);
+    throw error;
+  }
 }
 
 export async function findCoursesForEnrolledUser(userId) {
